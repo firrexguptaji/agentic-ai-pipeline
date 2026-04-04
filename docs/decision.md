@@ -71,3 +71,51 @@ Use gemini-2.5-flash as default model.
 ### Future Considerations
 
 Upgrade to Gemini Pro for complex reasoning tasks.
+
+## [2026-04-04] Use Environment-Based Configuration
+
+### Context
+
+Need flexible service configuration (e.g., service URLs).
+
+### Decision
+
+Use environment variables with a shared config module.
+
+### Reasoning
+
+* Simple and scalable
+* Works across environments (local, docker, cloud)
+* Avoids hardcoding values
+
+### Tradeoffs
+
+* Requires env management
+
+### Future Considerations
+
+May adopt config service for large-scale system.
+
+
+## [2026-04-04] Increase Service Timeout for LLM Calls
+
+### Context
+
+LLM responses may take several seconds depending on complexity.
+
+### Decision
+
+Set API Gateway timeout to 10–15 seconds for agent calls.
+
+### Reasoning
+
+* Avoid premature request failures
+* LLM latency is variable
+
+### Tradeoffs
+
+* Slightly longer wait time for failures
+
+### Future Considerations
+
+Implement async processing or streaming responses.
