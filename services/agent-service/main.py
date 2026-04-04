@@ -1,39 +1,32 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import logging
+
 from core.llm import LLMProvider
 
-# -----------------------
-# Logging
-# -----------------------
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# -----------------------
-# App
-# -----------------------
 app = FastAPI(title="Agent Service")
 
 llm = LLMProvider()
 
-# -----------------------
-# Schema
-# -----------------------
 class AgentRequest(BaseModel):
     query: str
 
-# -----------------------
-# Routes
-# -----------------------
-@app.get("/")
-def health():
-    return {"status": "agent running"}
-
 @app.post("/generate")
 def generate(request: AgentRequest):
-    logger.info(f"Received query: {request.query}")
-    response = llm.generate(request.query)
+    try:
+        logger.info(f"Query: {request.query}")
 
-    logger.info(f"Generated response")
+        response = llm.generate(request.query)
 
-    return {"response": response}
+        return {"response": response}
+
+    except Exception as e:
+        logger.error(f"Agent error: {str(e)}")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Agent failed to process request"
+        )
