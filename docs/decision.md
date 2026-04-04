@@ -119,3 +119,30 @@ Set API Gateway timeout to 10–15 seconds for agent calls.
 ### Future Considerations
 
 Implement async processing or streaming responses.
+## [2026-04-04] Use Gemini Embedding API for Vector Generation
+
+### Context
+
+Need to generate embeddings for text to support RAG (Retrieval-Augmented Generation) and semantic search.
+
+### Decision
+
+Use Google Gemini embedding model (`gemini-embedding-001`) within the Agent Service.
+
+### Reasoning
+
+* Already using Gemini ecosystem (no additional provider needed)
+* Simple integration with existing API setup
+* Good quality embeddings for general-purpose use
+* Reduces system complexity (single provider)
+
+### Tradeoffs
+
+* External dependency on Gemini API
+* Limited control compared to local embedding models
+
+### Future Considerations
+
+* Evaluate local embedding models for cost/performance optimization
+* Add batching for large-scale embedding generation
+* Move embedding to dedicated microservice if scaling requires

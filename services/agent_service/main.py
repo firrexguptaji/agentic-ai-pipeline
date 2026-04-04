@@ -4,6 +4,7 @@ import logging
 
 from services.agent_service.core.llm import LLMProvider
 from services.agent_service.core.embedding.embedding import EmbeddingService
+from services.agent_service.core.vector_db.qdrant import VectorDB
 
 
 
@@ -15,6 +16,7 @@ app = FastAPI(title="Agent Service")
 
 llm = LLMProvider()
 embedding_service = EmbeddingService()
+vector_db = VectorDB()
 
 
 class AgentRequest(BaseModel):
@@ -44,3 +46,32 @@ def embed_text(request: AgentRequest):
         return {"embedding": vector}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/store")
+def store_data(request: AgentRequest):
+    vector = embedding_service.embed(request.query)
+
+    vector_db.insert(
+        id=1,
+        vector=vector,
+        payload={"text": request.query}
+    )
+
+    return {"status": "stored"}
+
+
+@app.post("/search")
+def search_data(request: AgentRequest):
+    query_vector = embedding_service.embed(request.query)
+
+    results = vector_db.search(query_vector)
+
+    return {
+        "results": [
+            {
+            "   score": r.score,
+                "payload": r.payload
+            }
+            for r in results
+        ]
+    }
