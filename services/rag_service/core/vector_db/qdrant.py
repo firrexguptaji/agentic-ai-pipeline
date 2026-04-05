@@ -1,4 +1,3 @@
-
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.models import VectorParams, Distance, PointStruct
@@ -20,7 +19,7 @@ class VectorDB:
     def _create_collection(self):
         try:
             self.client.get_collection(self.collection_name)
-        except UnexpectedResponse:
+        except Exception:
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(
@@ -28,8 +27,6 @@ class VectorDB:
                     distance=Distance.COSINE
                 )
             )
-        
-            
 
     def insert(self, id: int, vector: list, payload: dict):
         self.client.upsert(
@@ -43,11 +40,10 @@ class VectorDB:
             ]
         )
 
-    def search(self, query_vector: list, limit: int = 3):
+    def search(self, query_vector: list, limit: int = settings.RETRIEVAL_TOP_K):
         results = self.client.query_points(
             collection_name=self.collection_name,
             query=query_vector,
             limit=limit
         )
-
         return results.points

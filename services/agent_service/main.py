@@ -3,11 +3,8 @@ from pydantic import BaseModel
 import logging
 
 from services.agent_service.core.llm import LLMProvider
-from services.agent_service.core.embedding.embedding import EmbeddingService
-from services.agent_service.core.vector_db.qdrant import VectorDB
-
-
-
+from services.agent_service.core.rag_client import RAGClient
+from shared.config.settings import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,21 +12,49 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Agent Service")
 
 llm = LLMProvider()
-embedding_service = EmbeddingService()
-vector_db = VectorDB()
+rag_client = RAGClient()
 
 
 class AgentRequest(BaseModel):
     query: str
 
+
 @app.post("/generate")
 def generate(request: AgentRequest):
     try:
-        logger.info(f"Query: {request.query}")
+        query = request.query
+        logger.info(f"Query: {query}")
 
-        response = llm.generate(request.query)
+        # 🔹 Step 1: Get context from RAG service
+        rag_response = rag_client.retrieve(query)
 
-        return {"response": response}
+        context = rag_response.get("context", "")
+
+        if not context:
+            return {
+                "query": query,
+                "response": "No relevant information found."
+            }
+
+        # 🔹 Step 2: Build prompt
+        prompt = f"""
+        {settings.SYSTEM_PROMPT}
+        
+        Context:
+        {context}
+        
+        Question:
+        {query}
+        """
+
+        # 🔹 Step 3: Generate response
+        response = llm.generate(prompt)
+
+        return {
+            "query": query,
+            "response": response,
+            "sources": rag_response.get("results", [])[:settings.MAX_SOURCES]
+        }
 
     except Exception as e:
         logger.error(f"Agent error: {str(e)}")
@@ -38,40 +63,3 @@ def generate(request: AgentRequest):
             status_code=500,
             detail="Agent failed to process request"
         )
-        
-@app.post("/embed")
-def embed_text(request: AgentRequest):
-    try:
-        vector = embedding_service.embed(request.query)
-        return {"embedding": vector}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@app.post("/store")
-def store_data(request: AgentRequest):
-    vector = embedding_service.embed(request.query)
-
-    vector_db.insert(
-        id=1,
-        vector=vector,
-        payload={"text": request.query}
-    )
-
-    return {"status": "stored"}
-
-
-@app.post("/search")
-def search_data(request: AgentRequest):
-    query_vector = embedding_service.embed(request.query)
-
-    results = vector_db.search(query_vector)
-
-    return {
-        "results": [
-            {
-            "   score": r.score,
-                "payload": r.payload
-            }
-            for r in results
-        ]
-    }
