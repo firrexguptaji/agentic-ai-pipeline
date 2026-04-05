@@ -1,10 +1,7 @@
-import os
-from dotenv import load_dotenv
 import google.generativeai as genai
 import logging
 from shared.config.settings import settings
 
-load_dotenv()
 logger = logging.getLogger(__name__)
 
 class LLMProvider:
