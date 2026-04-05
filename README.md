@@ -315,10 +315,4 @@ not just code → but system design
 
 ---
 
-# 💬 Next Upgrade (Optional)
 
-If you want next level:
-
-* add **architecture diagram (image)**
-* add **sample request/response screenshots**
-* add **benchmark results**
