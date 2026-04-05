@@ -206,3 +206,97 @@ Use Qdrant as the vector database and integrate it via a dedicated `VectorDB` se
 * Introduce distributed setup for scaling
 * Abstract DB layer to support alternative providers if needed
 
+## [2026-04-05] Introduce Dedicated RAG Microservice
+
+### Context
+
+The system initially handled embedding generation and vector database operations within the Agent Service. As the pipeline evolved to include retrieval, filtering, and context construction, responsibilities became increasingly coupled.
+
+A clearer separation was needed to support scalability, maintainability, and future enhancements such as reranking and document ingestion.
+
+---
+
+### Decision
+
+Extract all Retrieval-Augmented Generation (RAG) responsibilities into a dedicated `rag_service`.
+
+This service is responsible for:
+- Embedding generation (Gemini)
+- Vector storage and search (Qdrant)
+- Retrieval logic (top-k, filtering, ranking)
+- Context building for LLM consumption
+
+The `agent_service` now:
+- Calls `rag_service` via HTTP
+- Handles prompt construction
+- Interacts with the LLM (Gemini)
+
+---
+
+### Reasoning
+
+- **Separation of concerns:** Keeps retrieval logic independent from reasoning logic
+- **Scalability:** RAG workloads (search, ranking) can scale independently
+- **Reusability:** Other services can reuse `rag_service`
+- **Extensibility:** Enables future additions like reranking, hybrid search, and ingestion pipelines
+- **Clean architecture:** Each service owns a complete responsibility
+
+---
+
+### Tradeoffs
+
+- Introduces network overhead between services
+- Adds complexity in service communication and error handling
+- Requires stricter API contracts between services
+
+---
+
+### Future Considerations
+
+- Add reranking layer for improved retrieval quality
+- Introduce document ingestion pipeline (PDF → chunking → embeddings)
+- Optimize latency with caching or batching
+- Consider gRPC or async communication for performance
+
+## [2026-04-05] Centralize RAG Configuration and Tuning
+
+### Context
+
+RAG parameters such as top-k retrieval, score thresholds, and prompt structure were initially hardcoded across services. This made experimentation and tuning difficult.
+
+---
+
+### Decision
+
+Introduce centralized configuration for all RAG-related parameters via `shared/config/settings.py`.
+
+Key parameters:
+- `RETRIEVAL_TOP_K`
+- `FINAL_TOP_K`
+- `SCORE_THRESHOLD`
+- `MAX_SOURCES`
+- `SYSTEM_PROMPT`
+
+---
+
+### Reasoning
+
+- Enables rapid experimentation without code changes
+- Improves maintainability and consistency across services
+- Allows environment-based tuning (dev vs production)
+- Aligns with scalable system design practices
+
+---
+
+### Tradeoffs
+
+- Requires strict naming consistency across services
+- Misconfiguration can cause runtime errors
+
+---
+
+### Future Considerations
+
+- Add config validation and schema enforcement
+- Support environment-specific configs (dev/staging/prod)
+- Integrate secrets/config management for production

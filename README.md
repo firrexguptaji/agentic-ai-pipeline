@@ -1,148 +1,190 @@
+
 # 🚀 Agentic AI Pipeline (Microservices + RAG)
 
 ## 📌 Overview
 
-This project implements a scalable **agentic AI pipeline** using a microservices architecture. It integrates LLMs, embeddings, and a vector database to enable **semantic search** and **Retrieval-Augmented Generation (RAG)**.
+This project implements a **scalable Agentic AI system** using a **microservices architecture** with **Retrieval-Augmented Generation (RAG)**.
 
-The system is designed with a strong focus on **modularity, scalability, and real-world engineering practices**, evolving incrementally from core pipeline to intelligent systems.
+It integrates:
+- LLM (Google Gemini)
+- Embeddings
+- Vector database (Qdrant)
+
+The system enables **semantic search + context-aware responses** and is designed with a strong focus on:
+
+- Modularity
+- Scalability
+- Clean architecture
+- Real-world engineering practices
 
 ---
 
-## 🧠 Architecture Flow
+# 🧠 Architecture
 
-### 🔄 End-to-End Request Flow
+## 🔄 End-to-End Flow
 
 ```text
-Client Request
-     ↓
-API Gateway (FastAPI)
-     ↓
-Agent Service
-     ↓
-[Step 1] Generate Embedding (Gemini)
-     ↓
-[Step 2] Query Vector DB (Qdrant)
-     ↓
-[Step 3 - Upcoming] Retrieve Context (Top-K Results)
-     ↓
-[Step 4 - Upcoming] Inject Context into LLM Prompt
-     ↓
-LLM (Gemini)
-     ↓
-Response → API Gateway → Client
+Client
+ ↓
+API Gateway
+ ↓
+Agent Service (LLM + Orchestration)
+ ↓
+RAG Service (Embedding + Retrieval)
+ ↓
+Vector DB (Qdrant)
+ ↓
+Context → LLM → Response
+````
+
+---
+
+## 🧩 Service Breakdown
+
+### 🔹 API Gateway
+
+* Entry point for all requests
+* Handles routing and error handling
+
+### 🔹 Agent Service
+
+* Calls RAG service for context
+* Builds prompt
+* Interacts with Gemini LLM
+
+### 🔹 RAG Service
+
+* Generates embeddings
+* Stores and retrieves vectors (Qdrant)
+* Applies filtering and ranking
+* Builds context for LLM
+
+---
+
+# 📦 Data Flow
+
+```text
+Query
+ → Embedding
+ → Vector Search (Top-K)
+ → Score Filtering
+ → Context Building
+ → LLM Prompt
+ → Response
 ```
 
 ---
 
-### 🧩 Service Interaction
-
-```text
-services/api_gateway
-    ↓
-services/agent_service
-    ├── core/llm.py
-    ├── core/embedding/
-    └── core/vector_db/
-
-shared/config/settings.py (used across services)
-```
-
----
-
-### 📦 Data Flow
-
-#### Current
-
-```text
-Query → Embedding → Store/Search → Results
-```
-
-#### After RAG
-
-```text
-Query → Embedding → Vector Search → Context → LLM → Response
-```
-
----
-
-## ⚙️ Tech Stack
+# ⚙️ Tech Stack
 
 * **Backend:** FastAPI
-* **LLM Provider:** Google Gemini
-* **Embeddings:** Gemini Embedding API (`gemini-embedding-001`)
-* **Vector Database:** Qdrant
+* **LLM:** Google Gemini (`gemini-2.5-flash`)
+* **Embeddings:** Gemini (`gemini-embedding-001`)
+* **Vector DB:** Qdrant
 * **Architecture:** Microservices
-* **Config Management:** `.env` + centralized settings
+* **Config:** Centralized (`.env` + settings)
 
 ---
 
-## ✅ Features Implemented
+# ✅ Features
 
-* API Gateway with request routing
+## 🔹 Core
+
+* API Gateway routing
 * Agent Service with LLM integration
-* Embedding generation pipeline
-* Vector storage and semantic search (Qdrant)
-* Centralized configuration system
-* Issue-driven development with Kanban tracking
+* RAG Service (fully decoupled)
+* Qdrant vector search
+* Embedding pipeline
+
+## 🔹 RAG Enhancements
+
+* Top-K retrieval
+* Score-based filtering
+* Context builder
+* Prompt injection
+
+## 🔹 Engineering Practices
+
+* Centralized configuration
 * Decision logging (`docs/decision.md`)
+* Clean service boundaries
+* Config-driven tuning
 
 ---
 
-## 🧪 API Endpoints
+# 🧪 API Endpoints
 
-### 🔹 Query (Gateway)
+## 🔹 API Gateway
 
 ```http
 POST /query
 ```
 
-### 🔹 Generate Embedding
+---
+
+## 🔹 Agent Service
 
 ```http
-POST /embed
-```
-
-### 🔹 Store Data
-
-```http
-POST /store
-```
-
-### 🔹 Search Data
-
-```http
-POST /search
+POST /generate
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🔹 RAG Service
 
-### 1. Clone Repository
+```http
+POST /store
+POST /retrieve
+```
+
+---
+
+# 🚀 Getting Started
+
+## 1. Clone Repository
 
 ```bash
-git clone [<repo-url>](https://github.com/firrexguptaji/agentic-ai-pipeline/)
+git clone https://github.com/firrexguptaji/agentic-ai-pipeline.git
 cd agentic-ai-pipeline
 ```
 
 ---
 
-### 2. Setup Environment
+## 2. Setup Environment
 
 Create `.env` file:
 
 ```env
+# LLM
 GEMINI_API_KEY=your_api_key
-VECTOR_SIZE=3072
+MODEL_NAME=gemini-2.5-flash
 
+# Embedding
+EMBEDDING_MODEL=models/gemini-embedding-001
+
+# Qdrant
 QDRANT_HOST=localhost
 QDRANT_PORT=6333
 QDRANT_COLLECTION=documents
+VECTOR_SIZE=3072
+
+# Services
+AGENT_SERVICE_URL=http://localhost:8001/generate
+RAG_SERVICE_URL=http://localhost:8002
+
+# Config
+REQUEST_TIMEOUT=15
+
+# RAG Tuning
+RETRIEVAL_TOP_K=5
+FINAL_TOP_K=2
+SCORE_THRESHOLD=0.7
+MAX_SOURCES=2
 ```
 
 ---
 
-### 3. Install Dependencies
+## 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -150,7 +192,7 @@ pip install -r requirements.txt
 
 ---
 
-### 4. Start Qdrant
+## 4. Start Qdrant
 
 ```bash
 docker-compose up -d
@@ -158,93 +200,125 @@ docker-compose up -d
 
 ---
 
-### 5. Run Services
+## 5. Run Services
 
-#### API Gateway
+### API Gateway
 
 ```bash
-uvicorn services.api_gateway.main:app --reload --port 8000
+uvicorn services.api_gateway.main:app --port 8000 --reload
 ```
 
-#### Agent Service
+### Agent Service
 
 ```bash
-uvicorn services.agent_service.main:app --reload --port 8001
+uvicorn services.agent_service.main:app --port 8001 --reload
+```
+
+### RAG Service
+
+```bash
+uvicorn services.rag_service.main:app --port 8002 --reload
 ```
 
 ---
 
-## 📁 Project Structure
+# 📁 Project Structure
 
 ```text
 .
 ├── services/
 │   ├── api_gateway/
 │   ├── agent_service/
-│   │   ├── core/
-│   │   │   ├── llm.py
-│   │   │   ├── embedding/
-│   │   │   └── vector_db/
-│   └── rag_service/ (planned)
+│   │   └── core/
+│   │       ├── llm.py
+│   │       └── rag_client.py
+│   │
+│   └── rag_service/
+│       ├── api/
+│       └── core/
+│           ├── embedding/
+│           ├── vector_db/
+│           ├── retrieval/
+│           └── context/
 │
 ├── shared/
-│   ├── config/
-│   ├── schemas/
-│   └── utils/
+│   └── config/
 │
 ├── docs/
 │   └── decision.md
-│
-├── tests/
-├── docker-compose.yml
-├── requirements.txt
-└── README.md
 ```
 
 ---
 
-## 📊 Current Status
+# 📊 Current Status
 
-* ✅ Embedding pipeline complete
-* ✅ Vector DB integration complete
-* ✅ Semantic search working
-* 🔄 RAG integration in progress
-
----
-
-## 🧠 Key Design Decisions
-
-* Centralized configuration for scalability
-* Qdrant for efficient vector similarity search
-* Gemini embeddings for unified ecosystem
-* Modular service abstraction
-* Incremental system evolution (build → validate → extend)
+* ✅ Embedding pipeline
+* ✅ Vector DB integration
+* ✅ Retrieval system (Top-K + filtering)
+* ✅ Context building
+* ✅ RAG microservice architecture
+* 🔄 Next: Document ingestion & chunking
 
 ---
 
-## 🔮 Future Improvements
+# 🧠 Key Design Decisions
 
-* Full RAG pipeline (context injection + prompt structuring)
-* Tool calling (multi-agent capabilities)
-* Memory layer (conversation context)
-* Observability (tracing, logging, metrics)
-* Autoscaling strategies
-* Document ingestion pipeline (PDF → embeddings)
+* Dedicated `rag_service` for retrieval logic
+* Centralized configuration for tuning
+* Separation of retrieval and reasoning layers
+* Incremental system evolution
+
+See: `docs/decision.md`
 
 ---
 
-## 🧠 Learning Focus
+# 🔮 Future Improvements
+
+* Document ingestion pipeline (PDF → chunks → embeddings)
+* Reranking layer for improved retrieval
+* Hybrid search (vector + keyword)
+* Observability (logging, tracing)
+* Streaming responses
+* Multi-agent workflows
+
+---
+
+# 🧠 Learning Highlights
 
 This project demonstrates:
 
 * AI system design (LLM + RAG)
 * Microservices architecture
-* Vector databases and semantic search
-* Real-world engineering workflows (Kanban, issue tracking)
-* Incremental and scalable system development
+* Vector databases & semantic search
+* Production-style configuration
+* Incremental engineering approach
 
 ---
 
-## 📌 Author
+# 📌 Author
 
-Built as part of continuous learning and exploration in **AI system design and engineering**.
+Built as part of continuous exploration in:
+
+**AI Systems Design + Backend Engineering**
+
+````
+
+---
+
+# 🚀 What You Just Did
+
+This README now reflects:
+
+```text
+not just code → but system design
+````
+
+---
+
+# 💬 Next Upgrade (Optional)
+
+If you want next level:
+
+* add **architecture diagram (image)**
+* add **sample request/response screenshots**
+* add **benchmark results**
