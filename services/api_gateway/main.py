@@ -1,15 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import logging
 import requests
 import time
 
 from shared.config.settings import settings
+from shared.logging.logger import get_logger
+from shared.middleware.request_id import request_id_middleware
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+logger = get_logger("api-gateway")
 
 app = FastAPI(title="API Gateway")
+app.middleware("http")(request_id_middleware)
 
 
 class QueryRequest(BaseModel):
@@ -46,7 +48,7 @@ def query_handler(request: QueryRequest):
         return data
 
     except requests.exceptions.Timeout:
-        logger.error("Agent service timeout")
+        logger.exception("Agent service timeout")
 
         raise HTTPException(
             status_code=504,
@@ -54,7 +56,7 @@ def query_handler(request: QueryRequest):
         )
 
     except Exception as e:
-        logger.error(f"API error: {str(e)}")
+        logger.exception("API error")
 
         raise HTTPException(
             status_code=500,

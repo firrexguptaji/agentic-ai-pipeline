@@ -1,15 +1,18 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import logging
+
 
 from services.agent_service.core.llm import LLMProvider
 from services.agent_service.core.rag_client import RAGClient
 from shared.config.settings import settings
+from shared.logging.logger import get_logger
+from shared.middleware.request_id import request_id_middleware
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+logger = get_logger("agent-service")
 
 app = FastAPI(title="Agent Service")
+app.middleware("http")(request_id_middleware)
 
 llm = LLMProvider()
 rag_client = RAGClient()
@@ -27,6 +30,7 @@ def generate(request: AgentRequest):
 
         # 🔹 Step 1: Get context from RAG service
         rag_response = rag_client.retrieve(query)
+        logger.info(f"RAG Response: {rag_response}")
 
         context = rag_response.get("context", "")
 
@@ -57,7 +61,7 @@ def generate(request: AgentRequest):
         }
 
     except Exception as e:
-        logger.error(f"Agent error: {str(e)}")
+        logger.exception("Agent processing failed")
 
         raise HTTPException(
             status_code=500,

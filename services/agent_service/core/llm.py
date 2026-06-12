@@ -1,8 +1,9 @@
 import google.generativeai as genai
-import logging
-from shared.config.settings import settings
 
-logger = logging.getLogger(__name__)
+from shared.config.settings import settings
+from shared.logging.logger import get_logger
+
+logger = get_logger("agent-service")
 
 class LLMProvider:
     def __init__(self):
@@ -24,5 +25,5 @@ class LLMProvider:
             return response.text
 
         except Exception as e:
-            logger.error(f"LLM error: {str(e)}")
-            raise RuntimeError("LLM generation failed")
+            logger.exception("LLM generation failed")
+            raise ValueError(f"LLM generation error: {str(e)}")
