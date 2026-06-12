@@ -5,6 +5,7 @@ class Retriever:
     def __init__(self, embedder, vector_db):
         self.embedder = embedder
         self.vector_db = vector_db
+        
 
     def retrieve(self, query: str):
         query_vector = self.embedder.embed(query)

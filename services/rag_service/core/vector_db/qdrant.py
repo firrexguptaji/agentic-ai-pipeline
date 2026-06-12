@@ -1,10 +1,11 @@
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.models import VectorParams, Distance, PointStruct
-import logging
-from shared.config.settings import settings
 
-logger = logging.getLogger(__name__)
+from shared.config.settings import settings
+from shared.logging.logger import get_logger
+
+logger = get_logger("rag-service")
 
 class VectorDB:
     def __init__(self):

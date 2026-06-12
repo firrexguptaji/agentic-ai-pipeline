@@ -300,3 +300,139 @@ Key parameters:
 - Add config validation and schema enforcement
 - Support environment-specific configs (dev/staging/prod)
 - Integrate secrets/config management for production
+
+## [2026-06-12] Standardized Logging Across Services
+
+### Status
+
+Accepted
+
+### Context
+
+As the system evolved into multiple services (API Gateway, Agent Service, RAG Service), logging behavior became inconsistent. Different modules used different logger configurations, making troubleshooting and operational visibility difficult.
+
+### Decision
+
+Introduce a shared logging utility used across all services.
+
+All services now:
+
+* Use a centralized logger implementation
+* Follow a common log format
+* Use service-specific logger names
+* Use exception logging with stack traces
+
+Standard format:
+
+```text
+timestamp | service-name | log-level | message
+```
+
+Example:
+
+```text
+2026-06-12 16:55:10,401 | rag-service | INFO | Retrieve request received
+```
+
+### Reasoning
+
+* Improves debugging across services
+* Provides consistent operational visibility
+* Simplifies future monitoring integrations
+* Establishes foundation for distributed tracing
+
+### Tradeoffs
+
+* Additional logging statements increase code volume
+* Excessive logging may introduce noise if not managed
+
+### Future Considerations
+
+* Introduce Request ID propagation
+* Integrate OpenTelemetry tracing
+* Add structured JSON logging for production environments
+
+
+
+## [2026-06-12] Agent Fallback Behavior When Retrieval Returns No Results
+
+### Status
+
+Proposed
+
+### Context
+
+During end-to-end testing, retrieval queries such as:
+
+```text
+"What is Python?"
+```
+
+returned:
+
+```json
+{
+  "context": "",
+  "results": []
+}
+```
+
+The Agent Service currently returns:
+
+```json
+{
+  "response": "No relevant information found."
+}
+```
+
+without invoking the LLM.
+
+### Observation
+
+The current workflow is:
+
+```text
+Query
+ ↓
+RAG Retrieval
+ ↓
+No Context
+ ↓
+Terminate Request
+```
+
+This prevents the LLM from answering questions that may still be answerable using model knowledge.
+
+### Proposed Decision
+
+When retrieval returns no context:
+
+```text
+Query
+ ↓
+RAG Retrieval
+ ↓
+No Context
+ ↓
+Fallback to LLM
+```
+
+The original user query should be sent directly to the LLM.
+
+### Reasoning
+
+* Improves user experience
+* Avoids empty responses
+* Preserves usefulness when knowledge base coverage is incomplete
+* Supports incremental ingestion of documents
+
+### Tradeoffs
+
+* Responses may rely on model knowledge instead of retrieved facts
+* May reduce strict grounding guarantees
+
+### Future Considerations
+
+* Make fallback configurable
+* Return response source metadata (RAG vs LLM fallback)
+* Add confidence indicators

@@ -1,11 +1,12 @@
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
-import logging
+
 from shared.config.settings import settings
+from shared.logging.logger import get_logger
 
 load_dotenv()
-logger = logging.getLogger(__name__)
+logger = get_logger("rag-service")
 
 class EmbeddingService:
     def __init__(self):
@@ -25,5 +26,5 @@ class EmbeddingService:
             return result["embedding"]
 
         except Exception as e:
-            logger.error(f"Embedding error: {str(e)}")
-            raise RuntimeError("Embedding generation failed")
+            logger.exception("Embedding generation failed")
+            raise ValueError(f"Embedding generation error: {str(e)}")
