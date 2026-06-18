@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     FINAL_TOP_K: int = 2          # context for LLM
     SCORE_THRESHOLD: float = 0.7
     MAX_SOURCES: int = 2
+    # Chunking Configuration
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 200
 
     # -----------------------
     # PROMPT

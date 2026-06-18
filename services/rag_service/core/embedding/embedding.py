@@ -1,30 +1,44 @@
-import os
-from dotenv import load_dotenv
 import google.generativeai as genai
 
 from shared.config.settings import settings
 from shared.logging.logger import get_logger
 
-load_dotenv()
 logger = get_logger("rag-service")
 
+
 class EmbeddingService:
+    """
+    Generates vector embeddings using the Gemini Embedding API.
+    """
+
     def __init__(self):
-
         genai.configure(api_key=settings.GEMINI_API_KEY)
-
-        # ✅ Use embedding model
         self.model = settings.EMBEDDING_MODEL
 
-    def embed(self, text: str):
+    def embed(self, text: str) -> list[float]:
+        """
+        Generate an embedding for the supplied text.
+        """
+
         try:
             result = genai.embed_content(
                 model=self.model,
-                content=text
+                content=text,
             )
 
-            return result["embedding"]
+            embedding = result["embedding"]
+
+            logger.debug(
+                "Generated embedding (%d dimensions)",
+                len(embedding),
+            )
+
+            return embedding
 
         except Exception as e:
-            logger.exception("Embedding generation failed")
-            raise ValueError(f"Embedding generation error: {str(e)}")
+            logger.exception(
+                "Failed to generate embedding."
+            )
+            raise ValueError(
+                f"Embedding generation error: {str(e)}"
+            )

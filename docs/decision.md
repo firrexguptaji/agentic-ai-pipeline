@@ -436,3 +436,94 @@ The original user query should be sent directly to the LLM.
 * Make fallback configurable
 * Return response source metadata (RAG vs LLM fallback)
 * Add confidence indicators
+
+## ADR-018: Document Ingestion Pipeline
+
+### Status
+Accepted
+
+### Context
+
+The RAG system previously required manual insertion of text into the vector database, making it unsuitable for ingesting real-world documents.
+
+A dedicated ingestion pipeline was required to automate document processing while keeping retrieval and reasoning responsibilities separated.
+
+### Decision
+
+A dedicated ingestion pipeline was introduced inside the RAG service.
+
+Pipeline flow:
+
+Document
+↓
+DocumentLoader
+↓
+TextChunker
+↓
+EmbeddingService
+↓
+VectorDB (Qdrant)
+
+The ingestion pipeline is responsible for:
+
+- Loading supported documents (TXT, Markdown)
+- Splitting documents into configurable chunks
+- Generating embeddings for each chunk
+- Storing embeddings and metadata in Qdrant
+- Returning ingestion metadata
+
+Each stored vector now contains metadata including:
+
+- document_id
+- filename
+- file_type
+- chunk_index
+- chunk_count
+- content
+
+### Consequences
+
+Positive
+
+- Automated document ingestion
+- Clear separation between ingestion and retrieval
+- Extensible architecture for future document formats
+- Metadata available for filtering and source attribution
+
+Trade-offs
+
+- One embedding request is performed per chunk.
+- Qdrant inserts are currently performed one chunk at a time.
+- Batch ingestion is deferred to a future enhancement.
+
+
+## Investigation: Retrieval Response Behaviour
+
+### Observation
+
+During validation of the ingestion pipeline, retrieval occasionally returned empty context or appeared to take longer than expected.
+
+Investigation showed:
+
+- Document ingestion completed successfully.
+- Embeddings were generated successfully.
+- Vectors were stored successfully.
+- Qdrant returned matching results.
+- Mixed payload schemas (`text` and `content`) existed because of previously inserted test data.
+
+The retrieval pipeline itself remains functional, but additional investigation is required to determine whether response latency originates from:
+
+- retrieval score filtering
+- stale test data
+- payload consistency
+- downstream LLM interaction
+
+### Decision
+
+The investigation is intentionally deferred.
+
+Reason:
+
+Issue #18 focuses exclusively on document ingestion.
+
+Retrieval optimization and LLM fallback are addressed by subsequent issues.
