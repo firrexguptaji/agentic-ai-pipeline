@@ -1,4 +1,3 @@
-
 # 🚀 Agentic AI Pipeline (Microservices + RAG)
 
 ## 📌 Overview
@@ -6,16 +5,18 @@
 This project implements a **scalable Agentic AI system** using a **microservices architecture** with **Retrieval-Augmented Generation (RAG)**.
 
 It integrates:
-- LLM (Google Gemini)
-- Embeddings
-- Vector database (Qdrant)
 
-The system enables **semantic search + context-aware responses** and is designed with a strong focus on:
+* Google Gemini (LLM)
+* Gemini Embeddings
+* Qdrant Vector Database
+* Automated Document Ingestion Pipeline
 
-- Modularity
-- Scalability
-- Clean architecture
-- Real-world engineering practices
+The system enables **semantic search and context-aware responses** while emphasizing:
+
+* Modularity
+* Scalability
+* Clean architecture
+* Production-oriented engineering practices
 
 ---
 
@@ -24,53 +25,112 @@ The system enables **semantic search + context-aware responses** and is designed
 ## 🔄 End-to-End Flow
 
 ```text
-Client
- ↓
-API Gateway
- ↓
-Agent Service (LLM + Orchestration)
- ↓
-RAG Service (Embedding + Retrieval)
- ↓
-Vector DB (Qdrant)
- ↓
-Context → LLM → Response
-````
+                        +-----------------------+
+                        |      API Gateway      |
+                        +-----------+-----------+
+                                    |
+                                    v
+                        +-----------------------+
+                        |    Agent Service      |
+                        | LLM + Orchestration   |
+                        +-----------+-----------+
+                                    |
+                                    v
+                        +-----------------------+
+                        |      RAG Service      |
+                        +-----------+-----------+
+                                    |
+              +---------------------+----------------------+
+              |                                            |
+              v                                            v
+      Retrieval Pipeline                          Document Ingestion
+              |                                            |
+              v                                            v
+      Embedding Service                           Document Loader
+              |                                            |
+              |                                     Text Chunker
+              |                                            |
+              +---------------------+----------------------+
+                                    |
+                                    v
+                            Qdrant Vector DB
+                                    |
+                                    v
+                           Context → Gemini → Response
+```
 
 ---
 
-## 🧩 Service Breakdown
+# 🧩 Service Breakdown
 
-### 🔹 API Gateway
+## 🔹 API Gateway
 
 * Entry point for all requests
-* Handles routing and error handling
+* Routes client requests to backend services
+* Centralized request handling
 
-### 🔹 Agent Service
+## 🔹 Agent Service
 
-* Calls RAG service for context
-* Builds prompt
-* Interacts with Gemini LLM
+* Orchestrates AI workflow
+* Retrieves context from RAG Service
+* Builds prompts
+* Sends prompts to Gemini
+* Returns generated responses
 
-### 🔹 RAG Service
+## 🔹 RAG Service
 
-* Generates embeddings
-* Stores and retrieves vectors (Qdrant)
-* Applies filtering and ranking
-* Builds context for LLM
+Responsible for two independent pipelines:
+
+### Retrieval
+
+* Generate query embeddings
+* Search Qdrant
+* Score filtering
+* Context construction
+
+### Document Ingestion
+
+* Load supported documents
+* Split documents into chunks
+* Generate embeddings
+* Store vectors with metadata
 
 ---
 
 # 📦 Data Flow
 
+## Retrieval
+
 ```text
 Query
- → Embedding
- → Vector Search (Top-K)
- → Score Filtering
- → Context Building
- → LLM Prompt
- → Response
+ ↓
+Embedding
+ ↓
+Vector Search
+ ↓
+Score Filtering
+ ↓
+Context Builder
+ ↓
+LLM Prompt
+ ↓
+Response
+```
+
+## Document Ingestion
+
+```text
+Document
+ ↓
+Loader
+ ↓
+Chunker
+ ↓
+Embedding Service
+ ↓
+Metadata Builder
+ ↓
+Qdrant
 ```
 
 ---
@@ -80,9 +140,9 @@ Query
 * **Backend:** FastAPI
 * **LLM:** Google Gemini (`gemini-2.5-flash`)
 * **Embeddings:** Gemini (`gemini-embedding-001`)
-* **Vector DB:** Qdrant
+* **Vector Database:** Qdrant
 * **Architecture:** Microservices
-* **Config:** Centralized (`.env` + settings)
+* **Configuration:** Centralized (`.env` + settings)
 
 ---
 
@@ -90,31 +150,44 @@ Query
 
 ## 🔹 Core
 
-* API Gateway routing
-* Agent Service with LLM integration
-* RAG Service (fully decoupled)
-* Qdrant vector search
-* Embedding pipeline
+* API Gateway
+* Agent Service
+* RAG Service
+* Gemini integration
+* Qdrant integration
 
-## 🔹 RAG Enhancements
+## 🔹 Retrieval
 
+* Embedding generation
 * Top-K retrieval
-* Score-based filtering
-* Context builder
-* Prompt injection
+* Score filtering
+* Context building
+* Prompt construction
+
+## 🔹 Document Ingestion
+
+* TXT document support
+* Markdown document support
+* Automatic document loading
+* Configurable chunking
+* Metadata generation
+* Embedding generation
+* Vector storage in Qdrant
 
 ## 🔹 Engineering Practices
 
 * Centralized configuration
+* Structured logging
+* Request ID middleware
 * Decision logging (`docs/decision.md`)
 * Clean service boundaries
-* Config-driven tuning
+* Dependency injection
 
 ---
 
 # 🧪 API Endpoints
 
-## 🔹 API Gateway
+## API Gateway
 
 ```http
 POST /query
@@ -122,7 +195,7 @@ POST /query
 
 ---
 
-## 🔹 Agent Service
+## Agent Service
 
 ```http
 POST /generate
@@ -130,12 +203,22 @@ POST /generate
 
 ---
 
-## 🔹 RAG Service
+## RAG Service
 
 ```http
 POST /store
 POST /retrieve
+POST /ingest
 ```
+
+### `/ingest`
+
+Uploads a supported document and automatically:
+
+* Extracts text
+* Splits into chunks
+* Generates embeddings
+* Stores vectors and metadata in Qdrant
 
 ---
 
@@ -150,16 +233,14 @@ cd agentic-ai-pipeline
 
 ---
 
-## 2. Setup Environment
-
-Create `.env` file:
+## 2. Configure Environment
 
 ```env
 # LLM
 GEMINI_API_KEY=your_api_key
 MODEL_NAME=gemini-2.5-flash
 
-# Embedding
+# Embeddings
 EMBEDDING_MODEL=models/gemini-embedding-001
 
 # Qdrant
@@ -172,14 +253,18 @@ VECTOR_SIZE=3072
 AGENT_SERVICE_URL=http://localhost:8001/generate
 RAG_SERVICE_URL=http://localhost:8002
 
-# Config
+# Configuration
 REQUEST_TIMEOUT=15
 
-# RAG Tuning
+# Retrieval
 RETRIEVAL_TOP_K=5
 FINAL_TOP_K=2
 SCORE_THRESHOLD=0.7
 MAX_SOURCES=2
+
+# Chunking
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=200
 ```
 
 ---
@@ -200,24 +285,24 @@ docker-compose up -d
 
 ---
 
-## 5. Run Services
+## 5. Start Services
 
 ### API Gateway
 
 ```bash
-uvicorn services.api_gateway.main:app --port 8000 --reload
+uvicorn services.api_gateway.main:app --reload --port 8000
 ```
 
 ### Agent Service
 
 ```bash
-uvicorn services.agent_service.main:app --port 8001 --reload
+uvicorn services.agent_service.main:app --reload --port 8001
 ```
 
 ### RAG Service
 
 ```bash
-uvicorn services.rag_service.main:app --port 8002 --reload
+uvicorn services.rag_service.main:app --reload --port 8002
 ```
 
 ---
@@ -236,16 +321,25 @@ uvicorn services.rag_service.main:app --port 8002 --reload
 │   └── rag_service/
 │       ├── api/
 │       └── core/
+│           ├── context/
 │           ├── embedding/
-│           ├── vector_db/
+│           ├── ingestion/
+│           │   ├── loader.py
+│           │   ├── chunker.py
+│           │   ├── pipeline.py
+│           │   └── models.py
 │           ├── retrieval/
-│           └── context/
+│           └── vector_db/
 │
 ├── shared/
-│   └── config/
+│   ├── config/
+│   ├── logging/
+│   └── middleware/
 │
 ├── docs/
 │   └── decision.md
+│
+└── tests/
 ```
 
 ---
@@ -253,33 +347,49 @@ uvicorn services.rag_service.main:app --port 8002 --reload
 # 📊 Current Status
 
 * ✅ Embedding pipeline
-* ✅ Vector DB integration
-* ✅ Retrieval system (Top-K + filtering)
-* ✅ Context building
-* ✅ RAG microservice architecture
-* 🔄 Next: Document ingestion & chunking
+* ✅ Vector database integration
+* ✅ Retrieval pipeline
+* ✅ Context builder
+* ✅ Document ingestion pipeline
+* ✅ File upload endpoint
+* ✅ Metadata support
+* ✅ Integration testing
+
+### 🚧 Next Milestone
+
+* LLM fallback when retrieval returns no context
 
 ---
 
 # 🧠 Key Design Decisions
 
-* Dedicated `rag_service` for retrieval logic
-* Centralized configuration for tuning
-* Separation of retrieval and reasoning layers
-* Incremental system evolution
+* Dedicated RAG microservice
+* Separation of retrieval and reasoning
+* Dedicated document ingestion pipeline
+* Config-driven architecture
+* Dependency injection for shared services
+* Incremental feature delivery
 
-See: `docs/decision.md`
+See:
+
+```
+docs/decision.md
+```
 
 ---
 
 # 🔮 Future Improvements
 
-* Document ingestion pipeline (PDF → chunks → embeddings)
-* Reranking layer for improved retrieval
-* Hybrid search (vector + keyword)
-* Observability (logging, tracing)
+* PDF ingestion
+* DOCX ingestion
+* Recursive chunking
+* Batch vector insertion
+* Hybrid search
+* Metadata filtering
+* Reranking
 * Streaming responses
-* Multi-agent workflows
+* Multi-agent orchestration
+* OpenTelemetry tracing
 
 ---
 
@@ -287,11 +397,13 @@ See: `docs/decision.md`
 
 This project demonstrates:
 
-* AI system design (LLM + RAG)
+* AI system design
+* Retrieval-Augmented Generation
 * Microservices architecture
-* Vector databases & semantic search
-* Production-style configuration
-* Incremental engineering approach
+* Semantic search
+* Vector databases
+* Production-style backend engineering
+* Incremental architecture evolution
 
 ---
 
@@ -300,19 +412,3 @@ This project demonstrates:
 Built as part of continuous exploration in:
 
 **AI Systems Design + Backend Engineering**
-
-````
-
----
-
-# 🚀 What You Just Did
-
-This README now reflects:
-
-```text
-not just code → but system design
-````
-
----
-
-
