@@ -2,10 +2,15 @@ from shared.config.settings import settings
 
 
 class ContextBuilder:
-    def build(self, results):
-        # optional safety limit
+    """
+    Builds the final context passed to the LLM.
+    """
+
+    def build(self, results) -> str:
+        # Apply final context limit
         results = results[:settings.FINAL_TOP_K]
 
         return "\n\n".join(
-            [r.payload.get("text", "") for r in results]
+            r.payload.get("content", "")
+            for r in results
         )

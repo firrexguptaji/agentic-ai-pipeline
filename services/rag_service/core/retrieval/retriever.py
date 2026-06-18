@@ -14,6 +14,13 @@ class Retriever:
             query_vector=query_vector,
             limit=settings.RETRIEVAL_TOP_K
         )
+        
+        for r in results:
+            content = r.payload.get("content")
+            print(
+                f"Score={r.score:.4f} "
+                f"Content={(content[:50] if content else '<missing>')}"
+            )
 
         # 🔥 filter
         filtered = [
